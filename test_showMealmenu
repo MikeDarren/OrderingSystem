@@ -1,0 +1,46 @@
+def show_meal_menu(self, category):
+    self.clear_window()  # Clears the current window content
+        tk.Label(self.root, text=f"{category}", font=("Arial", 16, "bold")).pack(pady=10)  # Display the category name
+
+    # Loop through the meals in the selected category and create buttons for each meal
+    for i, meal in enumerate(self.meals[category]):
+        price = self.prices[list(self.meals.keys()).index(category)][i]  # Get the price of the meal
+        tk.Button(self.root, text=f"{meal} - Php {price:.2f}", command=lambda m=meal, p=price: self.ask_quantity(m, p)).pack(pady=5)  # Meal button
+
+        tk.Button(self.root, text="Back", command=self.build_main_menu).pack(pady=10)  # Back button to return to the main menu
+
+def checkout(self):
+    if not self.recent_orders:
+        messagebox.showerror("No Orders", "You have no orders to checkout.")
+        return
+
+    total = sum(price * quantity for _, price, quantity in self.recent_orders)  # Calculate the total cost of the order
+    payment_window = tk.Toplevel(self.root)
+    payment_window.title("Checkout")
+
+    # Display the total cost in the checkout window
+    tk.Label(payment_window, text=f"Total: Php {total:.2f}", font=("Times New Roman", 14)).pack(pady=10)
+    tk.Label(payment_window, text="Enter payment amount:").pack(pady=5)
+    payment_entry = tk.Entry(payment_window)
+    payment_entry.pack(pady=5)
+
+    def process_payment():
+        try:
+            amount_paid = float(payment_entry.get())  # Get the entered payment amount
+            if amount_paid < total:
+                messagebox.showerror("Insufficient Payment", f"You need Php {total - amount_paid:.2f} more.")  # Error if payment is insufficient
+            else:
+                change = amount_paid - total  # Calculate change to be returned
+                self.generate_receipt(amount_paid)  # Generate a receipt after successful payment
+                self.save_order(total)  # Save the order with total earnings
+                messagebox.showinfo("Payment Successful", f"Change: Php {change:.2f}")
+                payment_window.destroy()
+
+                # Increase customer number for the next order
+                self.customer_number += 1
+                self.build_main_menu()  # Return to the main menu after successful checkout
+
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter a valid numeric amount.")  # Handle invalid input
+
+    tk.Button(payment_window, text="Pay", command=process_payment).pack(pady=10)

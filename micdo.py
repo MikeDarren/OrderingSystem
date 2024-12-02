@@ -1,231 +1,223 @@
-from collections import defaultdict
+import tkinter as tk
+from tkinter import messagebox
+from datetime import datetime
 
-recent_orders = []
-all_orders = []
-total_earnings = 0.0
+class MicDoApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("MiCDO Ordering System")
+        self.root.geometry("500x600")
 
-def menu():
-    print(" [1] Chicken \t\t [2] Burger ")
-    print(" [3] Breakfast Meal\t [4] Drinks \n")
+        # Data Initialization
+        self.recent_orders = []
+        self.all_orders = {}  # Stores orders with their totals per day
+        self.total_earnings = 0.0
+        self.customer_number = 1
 
-def chicken_meal():
-    print(" [1] 1pc. Chicken MicDo with Medium IcedTea Meal \t\t "
-          "[2] 8pc. Chicken MicNuggets with Rice and Coke Meal")
-    print(" [3] 2pc. MicCrispy Chicken Fillet King with Rice and Coke Meal\t "
-          "[4] 2pcs. Chicken MicDo with Rice and Coke Meal \n")
+        # Meal Prices and Options
+        self.prices = [
+            [129.0, 149.0, 135.0, 199.0],
+            [99.0, 119.0, 169.0, 199.0],
+            [89.0, 89.0, 89.0, 139.0],
+            [49.0, 69.0, 99.0, 119.0],
+        ]
 
-def burger_meal():
-    print(" [1] YumMic Cheeseburger with MicFloat Meal \t\t "
-          "  [2] YummyMic Double Cheeseburger with Fries and Coke Meal")
-    print(" [3] Quarter Pounder with Cheese with Fries and Coke Meal"
-          "  [4] Big Mac CheesyMic Burger with Fries and Coke Meal \n")
+        self.meals = {
+            "Chicken Meal": [
+                "1pc. Chicken MicDo with Medium IcedTea Meal",
+                "8pc. Chicken MicNuggets with Rice and Coke Meal",
+                "2pc. MicCrispy Chicken Fillet King with Rice and Coke Meal",
+                "2pcs. Chicken MicDo with Rice and Coke Meal",
+            ],
+            "Burger Meal": [
+                "YumMic Cheeseburger with MicFloat Meal",
+                "YummyMic Double Cheeseburger with Fries and Coke Meal",
+                "Quarter Pounder with Cheese with Fries and Coke Meal",
+                "Big Mac CheesyMic Burger with Fries and Coke Meal",
+            ],
+            "Breakfast Meal": [
+                "MicDo Tapsilog with IcedTea Meal",
+                "MicDo Tosilog with IcedTea Meal",
+                "MicDo Hotsilog with IcedTea Meal",
+                "MicDo Sizzling Porksilog with Coke Meal",
+            ],
+            "Drinks": [
+                "Medium Coke MicFloat",
+                "Medium Iced Coffee Original with Vanilla",
+                "MicCaf'e Coffee Float",
+                "Medium Fries and Monster Coke MiCFloat",
+            ],
+        }
 
-def breakfast_meal():
-    print(" [1] MicDo Tapsilog with IcedTea Meal \t\t          [2] MicDo Tosilog with IcedTea Meal")
-    print(" [3] MicDo Hotsilog with IcedTea Meal\t\t          [4] MicDo Sizzling Porksilog with Coke Meal \n")
+        self.build_main_menu()
 
-def drinks_meal():
-    print(" [1] Medium Coke MicFloat  \t\t  [2] Medium Iced Coffee Original with Vanilla")
-    print(" [3] MicCaf'e Coffee Float  \t\t  [4] Medium Fries and Monster Coke MiCFloat \n")
+    def build_main_menu(self):
+        self.clear_window()
 
-def show_recent_orders(customer_number):
-    if recent_orders:
-        print("=======================")
-        print(f"Customer {customer_number}:")
+        # Header Layout
+        tk.Label(self.root, text="*=======================*", font=("Courier", 12)).grid(row=0, column=0, columnspan=2, pady=5)
+        tk.Label(self.root, text="Welcome to MiCDO!", font=("Times New Roman", 16, "italic bold")).grid(row=1, column=0, columnspan=2, pady=10)
+        tk.Label(self.root, text="*=======================*", font=("Courier", 12)).grid(row=2, column=0, columnspan=2, pady=5)
+        tk.Label(self.root, text="MENU", font=("Times New Roman", 16, "italic bold")).grid(row=3, column=0, columnspan=2, pady=5)
+        tk.Label(self.root, text=f"Customer {self.customer_number}", font=("Times New Roman", 12)).grid(row=4, column=0, columnspan=2, pady=5)
 
-        total = 0.0
-        for order, price in recent_orders:
-            print(f"{order} - Php {price:.2f}")
-            total += price
-        print(f"Total: Php {total:.2f}")
-        print("=======================\n")
-        return total
-    return 0.0
+        # Meal Buttons Layout (2 columns)
+        row = 5
+        col = 0
+        for idx, (category, meals) in enumerate(self.meals.items()):
+            tk.Button(self.root, text=category, command=lambda c=category: self.show_meal_menu(c)).grid(
+                row=row, column=col, pady=5, padx=10, sticky="ew"
+            )
+            col += 1
+            if col == 2:  # Reset column after 2 columns
+                col = 0
+                row += 1
 
-def show_all_orders():
-    print("=======================")
-    print("\nAll Orders of the Day:\n")
-    print("=======================")
-    customer_number = 1
-    for orders in all_orders:
-        print(f"Customer {customer_number}:")
-        total = 0.0
-        for order, price in orders:
-            print(f"{order} - Php {price:.2f}")
-            total += price
-        print(f"Total: Php {total:.2f}")
-        print("=======================\n")
-        customer_number += 1
+        # Additional Action Buttons
+        tk.Button(self.root, text="Checkout", command=self.checkout).grid(row=row+1, column=1, pady=10, sticky="e", padx=10)
+        tk.Button(self.root, text="Cancel Order", command=self.cancel_order).grid(row=row+2, column=1, pady=10, sticky="e", padx=10)
+        tk.Button(self.root, text="View Order History", command=self.view_order_history).grid(row=row+3, column=1, pady=10, sticky="e", padx=10)
 
-def show_total_earnings():
-    print("=======================")
-    print("Total Earnings for the Day:")
-    print(f"Php {total_earnings:.2f}")
-    print("=======================\n")
+    def show_meal_menu(self, category):
+        self.clear_window()
+        tk.Label(self.root, text=f"{category}", font=("Arial", 16, "bold")).pack(pady=10)
 
-def checkout(customer_number):
-    total = show_recent_orders(customer_number)
-    if total:
+        for i, meal in enumerate(self.meals[category]):
+            price = self.prices[list(self.meals.keys()).index(category)][i]
+            tk.Button(self.root, text=f"{meal} - Php {price:.2f}", command=lambda m=meal, p=price: self.ask_quantity(m, p)).pack(pady=5)
 
-        while True:
+        tk.Button(self.root, text="Back", command=self.build_main_menu).pack(pady=10)
+
+    def ask_quantity(self, meal, price):
+        self.clear_window()
+        tk.Label(self.root, text=f"Enter quantity for {meal}", font=("Times New Roman", 14)).pack(pady=10)
+        quantity_entry = tk.Entry(self.root)
+        quantity_entry.pack(pady=5)
+
+        def add_with_quantity():
             try:
-                amount_paid = float(input("Enter the amount you will pay: Php "))
+                quantity = int(quantity_entry.get())
+                if quantity <= 0:
+                    messagebox.showerror("Invalid Quantity", "Quantity must be greater than 0.")
+                    return
+                self.add_order(meal, price, quantity)
+                messagebox.showinfo("Order Added", f"{meal} x{quantity} added to your order!")
+                self.build_main_menu()
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter a valid quantity.")
+
+        tk.Button(self.root, text="Add to Order", command=add_with_quantity).pack(pady=10)
+        tk.Button(self.root, text="Back", command=self.build_main_menu).pack(pady=5)
+
+    def add_order(self, meal, price, quantity):
+        self.recent_orders.append((meal, price, quantity))
+
+    def checkout(self):
+        if not self.recent_orders:
+            messagebox.showerror("No Orders", "You have no orders to checkout.")
+            return
+
+        total = sum(price * quantity for _, price, quantity in self.recent_orders)
+        payment_window = tk.Toplevel(self.root)
+        payment_window.title("Checkout")
+
+        tk.Label(payment_window, text=f"Total: Php {total:.2f}", font=("Times New Roman", 14)).pack(pady=10)
+        tk.Label(payment_window, text="Enter payment amount:").pack(pady=5)
+        payment_entry = tk.Entry(payment_window)
+        payment_entry.pack(pady=5)
+
+        def process_payment():
+            try:
+                amount_paid = float(payment_entry.get())
                 if amount_paid < total:
-                    print(f"Insufficient payment. You need Php {total - amount_paid:.2f} more.")
+                    messagebox.showerror("Insufficient Payment", f"You need Php {total - amount_paid:.2f} more.")
                 else:
                     change = amount_paid - total
-                    print("\nProcessing your payment...")
-                    print("Payment successful! Here is your receipt:\n")
-                    print("=======================")
-                    print(f"Receipt for Customer {customer_number}")
-                    print("=======================")
-                    total_price = 0.0
-                    for order, price in recent_orders:
-                        print(f"{order} - Php {price:.2f}")
-                        total_price += price
-                    print("=======================")
-                    print(f"Total Orders: Php {total_price:.2f}")
-                    print(f"Amount Paid: Php {amount_paid:.2f}")
-                    print(f"Change: Php {change:.2f}")
-                    print("=======================")
-                    print("Thank you for your purchase!\n")
-                    print("Thank you for visiting MiCDO! We hope to see you again!\n")
-                    return True
+                    self.generate_receipt(amount_paid)  # Generate the receipt first
+                    self.save_order(total)  # Save the order with total
+                    messagebox.showinfo("Payment Successful", f"Change: Php {change:.2f}")
+                    payment_window.destroy()
+
+                    # Increase customer number for next customer
+                    self.customer_number += 1
+                    self.build_main_menu()
+
             except ValueError:
-                print("Invalid input. Please enter a valid numeric amount.")
-    return False
+                messagebox.showerror("Invalid Input", "Please enter a valid numeric amount.")
 
-def cancel_order():
-    print("Your order has been canceled. Proceeding to the next customer.\n")
+        tk.Button(payment_window, text="Pay", command=process_payment).pack(pady=10)
 
-def main():
-    global total_earnings
-    prices = [
-        [129.0, 149.0, 135.0, 199.0],
-        [99.0, 119.0, 169.0, 199.0],
-        [89.0, 89.0, 89.0, 139.0],
-        [49.0, 69.0, 99.0, 119.0]
-    ]
+    def generate_receipt(self, payment_amount):
+        # Create a new window for the receipt
+        receipt_window = tk.Toplevel(self.root)
+        receipt_window.title("Receipt")
 
-    print("=======================")
-    print("* Welcome to MiCDO! *")
+        # Title of the receipt
+        tk.Label(receipt_window, text="Customer Receipt", font=("Times New Roman", 16, "bold")).pack(pady=10)
 
-    customer_number = 1
+        # Items Ordered Section
+        tk.Label(receipt_window, text="Items Ordered:", font=("Times New Roman", 12, "italic bold")).pack(pady=5)
+        total_amount = 0  # Initialize total amount
 
-    while True:
-        print("=======================\n")
-        print(f"*   Welcome Customer {customer_number}!  *")
-        print("\n=======================\n")
+        # Loop through recent orders and display them
+        for meal, price, quantity in self.recent_orders:
+            tk.Label(receipt_window, text=f"{meal} x{quantity} - Php {price * quantity:.2f}", font=("Times New Roman", 12)).pack()
+            total_amount += price * quantity  # Add to total cost
 
-        print("=======================")
-        print("*        MENU           *")
-        print("=======================\n")
-        menu()
+        # Display total amount
+        tk.Label(receipt_window, text=f"Total Amount: Php {total_amount:.2f}", font=("Times New Roman", 12, "bold")).pack(pady=5)
 
-        menu_no = int(input("Please select your order: "))
-        print()
+        # Display payment amount
+        tk.Label(receipt_window, text=f"Payment: Php {payment_amount:.2f}", font=("Times New Roman", 12)).pack(pady=5)
 
-        if menu_no == 1:
-            print("=======================")
-            print("*      Chicken Meal     *")
-            print("=======================\n")
-            chicken_meal()
-            meal_choice = int(input("Enter your choice: "))
-            if 1 <= meal_choice <= 4:
-                meal_names = [
-                    "1pc. Chicken MicDo with Medium IcedTea Meal",
-                    "8pc. Chicken MicNuggets with Rice and Coke Meal",
-                    "2pc. MicCrispy Chicken Fillet King with Rice and Coke Meal",
-                    "2pcs. Chicken MicDo with Rice and Coke Meal"
-                ]
-                selected_order = meal_names[meal_choice - 1]
-                cost = prices[0][meal_choice - 1]
-                print(f"Your Order is: {selected_order}")
-                print(f"Cost: Php {cost:.2f}")
-                recent_orders.append((selected_order, cost))
-
-        elif menu_no == 2:
-            print("=======================")
-            print("*       Burger Meal      *")
-            print("=======================\n")
-            burger_meal()
-            meal_choice = int(input("Enter your choice: "))
-            if 1 <= meal_choice <= 4:
-                meal_names = [
-                    "YumMic Cheeseburger with MicFloat Meal",
-                    "YummyMic Double Cheeseburger with Fries and Coke Meal",
-                    "Quarter Pounder with Cheese with Fries and Coke Meal",
-                    "Big Mac CheesyMic Burger with Fries and Coke Meal"
-                ]
-                selected_order = meal_names[meal_choice - 1]
-                cost = prices[1][meal_choice - 1]
-                print(f"Your Order is: {selected_order}")
-                print(f"Cost: Php {cost:.2f}")
-                recent_orders.append((selected_order, cost))
-
-        elif menu_no == 3:
-            print("=======================")
-            print("*    Breakfast Meal     *")
-            print("=======================\n")
-            breakfast_meal()
-            meal_choice = int(input("Enter your choice: "))
-            if 1 <= meal_choice <= 4:
-                meal_names = [
-                    "MicDo Tapsilog with IcedTea Meal",
-                    "MicDo Tosilog with IcedTea Meal",
-                    "MicDo Hotsilog with IcedTea Meal",
-                    "MicDo Sizzling Porksilog with Coke Meal"
-                ]
-                selected_order = meal_names[meal_choice - 1]
-                cost = prices[2][meal_choice - 1]
-                print(f"Your Order is: {selected_order}")
-                print(f"Cost: Php {cost:.2f}")
-                recent_orders.append((selected_order, cost))
-
-        elif menu_no == 4:
-            print("=======================")
-            print("*       Drinks          *")
-            print("=======================\n")
-            drinks_meal()
-            drink_choice = int(input("Enter your choice: "))
-            if 1 <= drink_choice <= 4:
-                drink_names = [
-                    "Medium Coke MicFloat",
-                    "Medium Iced Coffee Original with Vanilla",
-                    "MicCaf'e Coffee Float",
-                    "Medium Fries and Monster Coke MiCFloat"
-                ]
-                selected_order = drink_names[drink_choice - 1]
-                cost = prices[3][drink_choice - 1]
-                print(f"Your Order is: {selected_order}")
-                print(f"Cost: Php {cost:.2f}")
-                recent_orders.append((selected_order, cost))
-
+                # Calculate and display change
+        change = payment_amount - total_amount
+        if change < 0:
+            tk.Label(receipt_window, text="Error: Insufficient payment.", font=("Times New Roman", 12, "bold")).pack(pady=5)
         else:
-            print("Invalid menu option. Please try again.")
+            tk.Label(receipt_window, text=f"Change: Php {change:.2f}", font=("Times New Roman", 12, "bold")).pack(pady=5)
 
-        next_step = input("Do you want to checkout, add another order or cancel your order? (checkout/add/cancel): ").lower()
-        if next_step == "checkout":
-            if checkout(customer_number):
-                total_earnings += sum(price for _, price in recent_orders)
-                all_orders.append(recent_orders.copy())
-                recent_orders.clear()
-                customer_number += 1
+        # Footer of the receipt
+        tk.Label(receipt_window, text="Thank you for your order!", font=("Times New Roman", 14, "italic")).pack(pady=20)
 
-                if input("Do you want to see all orders of the day? (y/n): ").lower() == 'y':
-                    show_all_orders()
-                    show_total_earnings()
-                    break
-            else:
-                print("You canceled the payment. Returning to the menu.")
-        elif next_step == "add":
-            print("Adding another order.")
-        elif next_step == "cancel":
-            cancel_order()
-            customer_number += 1
-            recent_orders.clear()
+    def save_order(self, total):
+        # Save the recent order with total earnings
+        order_date = datetime.now().strftime("%Y-%m-%d")
+        if order_date not in self.all_orders:
+            self.all_orders[order_date] = []
+        self.all_orders[order_date].append((self.recent_orders.copy(), total))
+        self.total_earnings += total
+        self.recent_orders.clear()  # Clear the recent orders after saving
+
+    def view_order_history(self):
+        self.clear_window()
+
+        if not self.all_orders:
+            tk.Label(self.root, text="No order history available.", font=("Times New Roman", 14)).pack(pady=20)
         else:
-            print("Invalid input. Returning to menu.")
+            tk.Label(self.root, text="Order History:", font=("Times New Roman", 16, "bold")).pack(pady=10)
+
+            for order_date, orders in self.all_orders.items():
+                tk.Label(self.root, text=f"Date: {order_date}", font=("Times New Roman", 14, "italic bold")).pack(pady=5)
+                for order, total in orders:
+                    for meal, price, quantity in order:
+                        tk.Label(self.root, text=f"{meal} x{quantity} - Php {price * quantity:.2f}", font=("Times New Roman", 12)).pack()
+                    tk.Label(self.root, text=f"Total: Php {total:.2f}", font=("Times New Roman", 14, "bold")).pack(pady=5)
+
+        tk.Button(self.root, text="Back to Menu", command=self.build_main_menu).pack(pady=20)
+
+    def cancel_order(self):
+        self.recent_orders.clear()  # Clear any current order
+        messagebox.showinfo("Order Cancelled", "Your order has been cancelled.")
+        self.build_main_menu()
+
+    def clear_window(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()  # Remove all widgets from the window
+
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = MicDoApp(root)
+    root.mainloop()
+
